@@ -1,0 +1,14 @@
+log_sources:
+  ssh:
+    path: /var/log/auth.log
+    type: ssh
+
+rules:
+  detect_failed_login: true
+  detect_success_login: true
+  detect_bruteforce: true
+
+outputs:
+  - type: stdout
+  - type: file
+    path: /var/log/soc-agent.log
