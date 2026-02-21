@@ -23,5 +23,12 @@ class SSHParser:
                 "ip": ip,
                 "raw": line.strip()
             }
-
+            
+        if "session closed for user" in line and "sshd" in line:
+            
+            return {
+                "event": "SSH_SESSION_CLOSED",
+                "raw": line.strip()
+            }
+            
         return None
