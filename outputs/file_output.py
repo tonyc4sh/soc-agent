@@ -1,3 +1,5 @@
+import json
+
 class FileOutput:
 
     def __init__(self, path):
@@ -5,4 +7,4 @@ class FileOutput:
 
     def send(self, alert):
         with open(self.path, "a") as f:
-            f.write(str(alert) + "\n")
+            f.write(json.dumps(alert) + "\n")

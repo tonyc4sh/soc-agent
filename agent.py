@@ -1,28 +1,50 @@
-from watcher import LogWatcher
-from parser import SSHParser
-from rules import RuleEngine
-from outputs.stdout import StdoutOutput
-from outputs.file import FileOutput
+from watcher.log_watcher import LogWatcher
+from parser.ssh_parser import SSHParser
+from engine.detection_engine import DetectionEngine
 
-LOG_FILE = "/var/log/auth.log"
+from rules.failed_login_rule import FailedLoginRule
+from rules.ssh_bruteforce_rule import SSHBruteForceRule
+
+from outputs.stdout_output import StdoutOutput
+from outputs.file_output import FileOutput
+
+import yaml
+
+def load_config():
+    with open("config.yaml", "r") as f:
+        return yaml.safe_load(f)
 
 def main():
-    watcher = LogWatcher(LOG_FILE)
+    config = load_config()
+
+    logfile = config["log_sources"]["ssh"]["path"]
+    alertfile = config["outputs"]["file"]["path"]
+
+    watcher = LogWatcher(logfile)
     parser = SSHParser()
-    rules = RuleEngine()
+
+    rules = [
+        FailedLoginRule(),
+        SSHBruteForceRule()
+    ]
+
+    engine = DetectionEngine(rules)
 
     stdout = StdoutOutput()
-    fileout = FileOutput("/var/log/soc-agent.log")
+    fileout = FileOutput(alertfile)
 
-    print("SOC-Agent started...")
+    print(f"SOC-Agent started. Monitoring {logfile}")
 
     for line in watcher.follow():
-        parsed = parser.parse(line)
-        alert = rules.process(parsed)
+        event = parser.parse(line)
 
-        if alert:
-            stdout.send(alert)
-            fileout.send(alert)
+        if event:
+            alerts = engine.process(event)
+
+            for alert in alerts:
+                stdout.send(alert)
+                fileout.send(alert)
+
 
 if __name__ == "__main__":
     main()
