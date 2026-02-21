@@ -4,6 +4,7 @@ from engine.detection_engine import DetectionEngine
 
 from rules.failed_login_rule import FailedLoginRule
 from rules.ssh_bruteforce_rule import SSHBruteForceRule
+from rules.success_login_rule import SuccessLoginRule
 
 from outputs.stdout_output import StdoutOutput
 from outputs.file_output import FileOutput
@@ -25,7 +26,8 @@ def main():
 
     rules = [
         FailedLoginRule(),
-        SSHBruteForceRule()
+        SSHBruteForceRule(),
+        SuccessLoginRule()
     ]
 
     engine = DetectionEngine(rules)
