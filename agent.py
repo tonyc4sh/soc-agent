@@ -6,6 +6,8 @@ from rules.failed_login_rule import FailedLoginRule
 from rules.ssh_bruteforce_rule import SSHBruteForceRule
 from rules.successful_login_rule import SuccessfulLoginRule
 from rules.session_closed_rule import SessionClosedRule
+from rules.bruteforce_success_rule import BruteForceSuccessRule
+from rules.session_tracking_rule import SessionTrackingRule
 
 from outputs.stdout_output import StdoutOutput
 from outputs.file_output import FileOutput
@@ -29,7 +31,9 @@ def main():
         FailedLoginRule(),
         SSHBruteForceRule(),
         SuccessfulLoginRule(),
-        SessionClosedRule()
+        SessionClosedRule(),
+        BruteForceSuccessRule(),
+        SessionTrackingRule()
     ]
 
     engine = DetectionEngine(rules)
@@ -39,15 +43,22 @@ def main():
 
     print(f"SOC-Agent started. Monitoring {logfile}")
 
-    for line in watcher.follow():
-        event = parser.parse(line)
+    try:
+        for line in watcher.follow():
+            event = parser.parse(line)
 
-        if event:
-            alerts = engine.process(event)
+            if event:
+                alerts = engine.process(event)
 
-            for alert in alerts:
-                stdout.send(alert)
-                fileout.send(alert)
+                for alert in alerts:
+                    stdout.send(alert)
+                    fileout.send(alert)
+
+    except KeyboardInterrupt:
+        print("\n[INFO] Agent stopped by user")
+
+    finally:
+        print("[INFO] Cleaning up resources...")
 
 
 if __name__ == "__main__":

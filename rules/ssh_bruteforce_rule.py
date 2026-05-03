@@ -4,30 +4,34 @@ from collections import defaultdict
 class SSHBruteForceRule:
 
     def __init__(self):
-        self.failed_attempts = defaultdict(list)
+        self.attempts = {}
+        self.alerted_ips = set()
 
     def check(self, event):
 
         if event["event"] != "FAILED_LOGIN":
             return None
 
-        ip = event.get("ip")
-        now = time.time()
+        ip = event["ip"]
 
-        self.failed_attempts[ip].append(now)
+        self.attempts.setdefault(ip, []).append(time.time())
 
-        # usuń starsze niż 60 sekund
-        self.failed_attempts[ip] = [
-            t for t in self.failed_attempts[ip]
-            if now - t <= 60
+        # filtr 60s
+        self.attempts[ip] = [
+            t for t in self.attempts[ip]
+            if time.time() - t <= 60
         ]
 
-        if len(self.failed_attempts[ip]) >= 5:
+        if len(self.attempts[ip]) >= 5:
+
+            if ip in self.alerted_ips:
+                return None
+
+            self.alerted_ips.add(ip)
+
             return {
                 "alert_type": "SSH_BRUTE_FORCE",
                 "severity": "HIGH",
                 "ip": ip,
-                "attempts_last_60s": len(self.failed_attempts[ip])
+                "attempts_last_60s": len(self.attempts[ip])
             }
-
-        return None
